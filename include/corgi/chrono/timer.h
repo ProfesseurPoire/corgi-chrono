@@ -44,7 +44,7 @@ struct timer
     {
     }
 
-    const static int tick = 1;
+    const static inline int tick = 1;
 
     /**
      * @brief Starts the constructed timer
