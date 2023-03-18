@@ -56,12 +56,9 @@ int main()
         "timer", "async repeat",
         []() -> void
         {
-            auto start = std::chrono::system_clock::now();
-
             std::chrono::time_point<std::chrono::system_clock> end;
             std::string                                        result;
-
-            timer t(
+            timer                                              t(
                 200,
                 [&]() -> void
                 {
@@ -71,6 +68,7 @@ int main()
                 timer::mode::async);
 
             t.repeat(3);
+            auto start = std::chrono::system_clock::now();
             t.start();
 
             std::this_thread::sleep_for(std::chrono::milliseconds(800));

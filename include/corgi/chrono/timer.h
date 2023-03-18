@@ -44,6 +44,8 @@ struct timer
     {
     }
 
+    const static int tick = 1;
+
     /**
      * @brief Starts the constructed timer
      */
@@ -52,10 +54,26 @@ struct timer
         switch(context)
         {
             case timer::mode::sync:
+
                 while(repeat_ > 0 || repeat_ == -1)
                 {
-                    std::this_thread::sleep_for(
-                        std::chrono::milliseconds(duration));
+                    int  total         = 0;
+                    bool keep_sleeping = true;
+                    while(keep_sleeping)
+                    {
+                        auto start = std::chrono::system_clock::now();
+
+                        std::this_thread::sleep_for(
+                            std::chrono::milliseconds(tick));
+
+                        auto end    = std::chrono::system_clock::now();
+                        auto int_ms = std::chrono::duration_cast<
+                            std::chrono::milliseconds>(end - start);
+                        total += int_ms.count();
+                        if(total > duration)
+                            keep_sleeping = false;
+                    }
+
                     callback();
                     if(repeat_ != -1)
                         repeat_--;
@@ -92,7 +110,21 @@ private:
     {
         while(repeat_ > 0 || repeat_ == -1)
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(duration));
+            int  total         = 0;
+            bool keep_sleeping = true;
+            auto start         = std::chrono::system_clock::now();
+
+            while(keep_sleeping)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(tick));
+                auto end = std::chrono::system_clock::now();
+                auto int_ms =
+                    std::chrono::duration_cast<std::chrono::milliseconds>(
+                        end - start);
+                if(int_ms.count() >= duration)
+                    keep_sleeping = false;
+            }
+
             callback();
             if(repeat_ != -1)
             {
