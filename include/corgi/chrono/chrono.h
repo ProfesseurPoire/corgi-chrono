@@ -1,5 +1,6 @@
 #pragma once
 
-namespace corgi{
-	 void chrono();
+namespace corgi::chrono
+{
+void trigger(int time);
 }

@@ -1,1 +1,1 @@
-target_sources(${PROJECT_NAME} PRIVATE chrono.cpp )
+target_sources(${PROJECT_NAME} PRIVATE chrono.cpp  "../include/corgi/chrono/timer.h" )
