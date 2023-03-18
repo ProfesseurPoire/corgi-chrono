@@ -1,6 +1,7 @@
 #pragma once
 #include <chrono>
 #include <functional>
+#include <mutex>
 #include <thread>
 
 namespace corgi::chrono
