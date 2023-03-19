@@ -110,6 +110,9 @@ struct timer
 
     void stop()
     {
+        if(!running_)
+            return;
+
         stop_mutex_.lock();
         running_ = false;
         stop_mutex_.unlock();
