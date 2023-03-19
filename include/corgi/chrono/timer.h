@@ -120,6 +120,8 @@ struct timer
 
     ~timer()
     {
+        // In case the timer is still running, we explicitly stop it.
+        stop();
         if(mode_ == timer::mode::async)
             if(t.joinable())
                 t.join();
