@@ -8,6 +8,25 @@ using namespace corgi::chrono;
 int main()
 {
     corgi::test::add_test(
+        "timer", "set",
+        []() -> void
+        {
+            std::string result;
+            timer       t(
+                300, [&]() { result = "a"; },
+                corgi::chrono::timer::mode::async);
+            t.start();
+            t.set(
+                150, [&]() { result = "b"; },
+                corgi::chrono::timer::mode::async);
+            t.start();
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+            assert_that(result, corgi::test::equals(std::string("b")));
+        });
+
+    corgi::test::add_test(
         "timer", "sync",
         []() -> void
         {
@@ -97,6 +116,11 @@ int main()
                 },
                 timer::mode::async);
 
+            // Basically stopping the timer at the second tick
+            // 200 ms : a
+            // 400 ms : aa
+            // 550 ms : t2 triggered, t is stopped and won't fire off a third
+            // time
             timer t2(
                 550, [&]() -> void { t.stop(); }, timer::mode::async);
 
@@ -107,8 +131,8 @@ int main()
 
             auto int_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                 end - start);
-            assert_that(result, corgi::test::equals(std::string("aaa")));
-            assert_that(int_ms.count(), corgi::test::almost_equals(600, 40));
+            assert_that(result, corgi::test::equals(std::string("aa")));
+            assert_that(int_ms.count(), corgi::test::almost_equals(400, 40));
         });
     return corgi::test::run_all();
 }

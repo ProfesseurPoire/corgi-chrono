@@ -38,10 +38,25 @@ struct timer
     timer(int                   time,
           std::function<void()> callback,
           timer::mode           mode = timer::mode::sync)
-        : duration(time)
-        , callback(callback)
-        , context(mode)
+        : time_(time)
+        , callback_(callback)
+        , mode_(mode)
     {
+    }
+
+    timer() {}
+
+    void set(int                   time,
+             std::function<void()> callback,
+             timer::mode           mode = timer::mode::sync)
+    {
+        if(running_)
+            stop();
+
+        running_  = false;
+        time_     = time;
+        callback_ = callback;
+        mode_     = mode;
     }
 
     const static inline int tick = 1;
@@ -51,7 +66,8 @@ struct timer
      */
     void start()
     {
-        switch(context)
+        running_ = true;
+        switch(mode_)
         {
             case timer::mode::sync:
 
@@ -69,14 +85,15 @@ struct timer
                         auto end    = std::chrono::system_clock::now();
                         auto int_ms = std::chrono::duration_cast<
                             std::chrono::milliseconds>(end - start);
-                        if(int_ms.count() > duration)
+                        if(int_ms.count() > time_)
                             keep_sleeping = false;
                     }
 
-                    callback();
+                    callback_();
                     if(repeat_ != -1)
                         repeat_--;
                 }
+                running_ = false;
                 break;
             case timer::mode::async:
                 t = std::thread(&timer::async_func, this);
@@ -94,14 +111,18 @@ struct timer
     void stop()
     {
         stop_mutex_.lock();
-        stop_ = true;
+        running_ = false;
         stop_mutex_.unlock();
+        // To be fair this is debatable, should stop wait for the thread to
+        // join?
+        t.join();
     }
 
     ~timer()
     {
-        if(context == timer::mode::async)
-            t.join();
+        if(mode_ == timer::mode::async)
+            if(t.joinable())
+                t.join();
     }
 
 private:
@@ -115,32 +136,34 @@ private:
 
             while(keep_sleeping)
             {
+                if(!running_)
+                    return;
+
                 std::this_thread::sleep_for(std::chrono::milliseconds(tick));
                 auto end = std::chrono::system_clock::now();
                 auto int_ms =
                     std::chrono::duration_cast<std::chrono::milliseconds>(
                         end - start);
-                if(int_ms.count() >= duration)
+                if(int_ms.count() >= time_)
                     keep_sleeping = false;
             }
 
-            callback();
+            callback_();
             if(repeat_ != -1)
-            {
                 repeat_--;
-            }
 
-            if(stop_)
+            if(!running_)
                 return;
         }
+        running_ = false;
     }
-    timer::mode           context;
-    std::function<void()> callback;
-    int                   duration;
+    timer::mode           mode_;
+    std::function<void()> callback_;
+    int                   time_;
     std::thread           t;
     int                   repeat_ = 1;
     std::mutex            stop_mutex_;
-    bool                  stop_ = false;
+    bool                  running_ = false;
 };
 
 }    // namespace corgi::chrono
